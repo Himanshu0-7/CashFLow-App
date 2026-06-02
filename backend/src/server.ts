@@ -1,10 +1,15 @@
-import Fastify from "fastify";
-const app = Fastify({ logger: true });
+import express from "express";
+import "dotenv/config";
+import cors from "cors";
+import routes from "./routes/index";
 
-app.get("/", async () => {
-  return { ok: true };
-});
+const app = express();
 
-app.listen({ port: 3000 }).then(() => {
+app.use(cors());
+app.use(express.json());
+
+app.use("/api", routes);
+
+app.listen(3000, "0.0.0.0", () => {
   console.log("Server running on http://localhost:3000");
 });

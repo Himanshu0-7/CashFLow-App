@@ -1,9 +1,9 @@
-package com.example.cashflow.ui
+package com.example.cashflow.ui.main
 
 
+import androidx.activity.ComponentActivity
 import androidx.compose.animation.core.Animatable
 import com.example.cashflow.R
-
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.IconButton
@@ -27,7 +28,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,13 +40,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.cashflow.ui.booksEntry.BooksEntry
+import com.example.cashflow.ui.category.CategoryScreen
+import com.example.cashflow.ui.home.HomeScreen
+import com.example.cashflow.viewmodel.BookViewModel
 
 
 @Composable
-fun CounterScreen(viewModel: BookViewModel = androidx.lifecycle.viewmodel.compose.viewModel()) {
+fun MainScreen(
+    navController: NavController, viewModel: BookViewModel = viewModel(
+        viewModelStoreOwner = LocalContext.current as ComponentActivity
+    )
+) {
     Box(
         modifier = Modifier
             .background(Color.Black)
@@ -63,14 +74,14 @@ fun CounterScreen(viewModel: BookViewModel = androidx.lifecycle.viewmodel.compos
             config.screenHeightDp.dp.toPx()
         }
         val sheetHeightPx = with(density) {
-            450.dp.toPx()
+            600.dp.toPx()
         }
         val closePos = screenHeightPx
         val openPos = screenHeightPx - sheetHeightPx
 
         var animoffset = remember { Animatable(closePos) }
-
-
+        var balanceInput by remember { mutableStateOf("") }
+        val state = viewModel.uiState.value
         HorizontalPager(
             state = pageState,
             pageSpacing = 16.dp,
@@ -81,7 +92,7 @@ fun CounterScreen(viewModel: BookViewModel = androidx.lifecycle.viewmodel.compos
         ) { page ->
             when (page) {
                 0 -> HomeScreen()
-                1 -> CollectionsScreen()
+                1 -> CategoryScreen(navController)
 
             }
         }
@@ -122,7 +133,7 @@ fun CounterScreen(viewModel: BookViewModel = androidx.lifecycle.viewmodel.compos
                 .offset { IntOffset(0, animoffset.value.toInt()) }
                 .fillMaxWidth()
                 .then(dragModifier)
-                .height(450.dp)
+                .height(600.dp)
                 .background(
                     Color(0xFF0f1230),
                     RoundedCornerShape(
@@ -156,7 +167,7 @@ fun CounterScreen(viewModel: BookViewModel = androidx.lifecycle.viewmodel.compos
                 Spacer(Modifier.height(6.dp))
 
                 TextField(
-                    value = viewModel.bookName.value,
+                    value = state.bookName,
                     onValueChange = { viewModel.updateBookName(it) },
                     placeholder = { Text("Enter Book Name") },
                     modifier = Modifier.fillMaxWidth(),
@@ -174,20 +185,47 @@ fun CounterScreen(viewModel: BookViewModel = androidx.lifecycle.viewmodel.compos
                 Spacer(Modifier.height(10.dp))
                 BookOption(
                     "Cash Book",
-                    selected = viewModel.selectedOption.value == "Cash",
+                    selected = state.selectedOption == "Cash",
                     onSelect = { viewModel.selectOption("Cash") })
                 Spacer(Modifier.height(8.dp))
                 BookOption(
                     "Travel Book",
-                    selected = viewModel.selectedOption.value == "Travel",
+                    selected = state.selectedOption == "Travel",
                     onSelect = { viewModel.selectOption("Travel") }
                 )
+                Text(
+                    text = if (state.selectedOption == "Travel") "Budget" else "Opening Balance",
+                    color = Color.Gray
+                )
 
+                TextField(
+                    value = balanceInput,
+                    onValueChange = { balanceInput = it },
+                    placeholder = {
+                        Text(
+                            if (state.selectedOption == "Travel")
+                                "Enter Budget"
+                            else
+                                "Enter Opening Balance"
+                        )
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
 //                Spacer(Modifier.weight(1f))
                 Spacer(Modifier.height(16.dp))
 
                 Button(
-                    onClick = {},
+                    onClick = {
+                        val balance = balanceInput.toDoubleOrNull() ?: 0.0
+
+                        viewModel.saveBook(balance)
+
+                        scope.launch {
+                            animoffset.animateTo(closePos)
+                            pageState.animateScrollToPage(1)
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
@@ -303,75 +341,5 @@ fun BookOption(text: String, selected: Boolean, onSelect: () -> Unit) {
     }
 }
 
-@Composable
-fun CollectionsScreen() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF080A1B))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .align(Alignment.TopCenter)
-                .background(Color.Transparent),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-//            IconButton(onClick = { /* back */ }) {
-//                Icon(
-//                    painter = painterResource(id = R.drawable.arrowback),
-//                    contentDescription = "Back",
-//                    tint = Color.White
-//                )
-//            }
-            Text(
-                textAlign = TextAlign.Center,
-                text = "View All Books",
-                color = Color.White,
-                fontSize = 20.sp,
-            )
-        }
-    }
-}
 
-@Composable
-fun HomeScreen() {
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Color(0xFF080A1B),
-
-                )
-
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .align(Alignment.TopCenter)
-                .background(Color.Transparent),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-//            IconButton(onClick = { /* back */ }) {
-//                Icon(
-//                    painter = painterResource(id = R.drawable.arrowback),
-//                    contentDescription = "Back",
-//                    tint = Color.White
-//                )
-//            }
-            Text(
-                textAlign = TextAlign.Center,
-                text = "Cash Flow App",
-                color = Color.White,
-                fontSize = 20.sp,
-            )
-        }
-    }
-
-}
 
