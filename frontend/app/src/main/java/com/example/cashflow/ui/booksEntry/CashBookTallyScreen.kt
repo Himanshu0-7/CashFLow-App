@@ -33,7 +33,6 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
-// Tally-standard ledger groups
 val TALLY_GROUPS = listOf(
     "Cash", "Bank Accounts", "Sundry Debtors", "Sundry Creditors",
     "Sales Accounts", "Purchase Accounts", "Direct Expenses",
@@ -677,7 +676,7 @@ fun ConnectTallyDialog(
     onDismiss: () -> Unit,
     onConnect: (name: String, ip: String) -> Unit
 ) {
-    var ip by remember { mutableStateOf("192.168.1.") }
+    var ip by remember { mutableStateOf("192.168.1.10") }
     var port by remember { mutableStateOf("9000") }
     var companies by remember { mutableStateOf<List<String>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
@@ -727,14 +726,16 @@ fun ConnectTallyDialog(
                         scope.launch {
                             isLoading = true
                             error = ""
-                            companies = emptyList()
-                            val result =
-                                TallySyncService.fetchCompanies(ip, port.toIntOrNull() ?: 9000)
-                            if (result.isEmpty()) {
-                                error =
-                                    "Could not connect. Make sure Tally is open and Gateway is enabled."
+                            val company =
+                                TallySyncService.fetchCompanyName(
+                                    ip,
+                                    port.toIntOrNull() ?: 9000
+                                )
+
+                            if (company == null) {
+                                error = "Could not fetch company name."
                             } else {
-                                companies = result
+                                companies = listOf(company)
                             }
                             isLoading = false
                         }

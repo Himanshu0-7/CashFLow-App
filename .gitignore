@@ -1,3 +1,6 @@
+# ------------------------
+# Android
+# ------------------------
 *.iml
 .gradle
 /local.properties
@@ -13,3 +16,24 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# ------------------------
+# Node.js
+# ------------------------
+Backend/node_modules/
+Backend/.env
+Backend/npm-debug.log*
+
+# ------------------------
+# Python
+# ------------------------
+Agent/__pycache__/
+Agent/.venv/
+Agent/venv/
+Agent/*.pyc
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db
